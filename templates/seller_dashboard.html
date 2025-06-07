@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seller Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, rgba(247, 250, 250, 0.96));
+            margin: 0;
+            padding: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .logout {
+            float: right;
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .add-product {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        #toggleProductsBtn {
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #dee2e6;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+
+        button.delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button.delete-btn:hover {
+            background-color: #a71d2a;
+        }
+
+        .no-products {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            th {
+                text-align: left;
+            }
+
+            td {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+
+    <script>
+    function deleteProduct(productId, rowElement) {
+        if (!confirm("Are you sure you want to delete this product?")) return;
+
+        fetch(`/delete_product_ajax/${productId}`, {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the product row from the table instantly
+                rowElement.remove();
+                alert('Product deleted successfully.');
+            } else {
+                alert('Failed to delete product: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+    </script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <a href="/logout" class="logout">Logout</a>
+        <h2>Welcome!!<br><small style="font-size: 16px; color: #666;">Manage your grocery listings</small></h2>
+
+        <a href="/add_product" class="add-product">+ Add Product</a>
+
+        <div class="product-list">
+            <h3>Your Products</h3>
+            <button id="toggleProductsBtn">View Products</button>
+
+            <div id="productsTableContainer" style="display:none;">
+                {% if products %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Seller ID</th>
+                            <th>Product Name</th>
+                            <th>Price (₹)</th>
+                            <th>Weight</th>
+                            <th>Unit</th>
+                            <th>Seller Email</th>
+                            <th>Action</th> <!-- Header for Delete button -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr id="row-{{ product.id }}">
+                            <td>{{ product.seller_id }}</td>
+                            <td>{{ product.name }}</td>
+                            <td>₹{{ product.price }}</td>
+                            <td>{{ product.weight }}</td>
+                            <td>{{ product.unit }}</td>
+                            <td>{{ product.seller_email }}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteProduct({{ product.id }}, document.getElementById('row-{{ product.id }}'))">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="no-products">
+                    <p>No products listed yet. Click on "Add Product" to get started!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('toggleProductsBtn');
+        const productsTable = document.getElementById('productsTableContainer');
+
+        if (toggleBtn && productsTable) {
+            toggleBtn.addEventListener('click', () => {
+                if (productsTable.style.display === 'none') {
+                    productsTable.style.display = 'block';
+                    toggleBtn.textContent = 'Hide Products';
+                } else {
+                    productsTable.style.display = 'none';
+                    toggleBtn.textContent = 'View Products';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

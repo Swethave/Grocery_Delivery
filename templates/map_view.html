@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Map View - Nearby Sellers</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+    // Initialize and add the map
+    function initMap() {
+        // Center the map to some default location (e.g., city center)
+        const center = { lat: 12.9716, lng: 77.5946 }; // Example: Bangalore
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 12,
+            center: center,
+        });
+
+        // Sellers data passed from backend (example)
+        const sellers = {{ sellers | tojson }};
+
+        sellers.forEach(seller => {
+            const position = { lat: seller.latitude, lng: seller.longitude };
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: seller.name,
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<strong>${seller.name}</strong><br>${seller.address}<br>Email: ${seller.email}`,
+            });
+
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+        });
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+
+</body>
+</html>

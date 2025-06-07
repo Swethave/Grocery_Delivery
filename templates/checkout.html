@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Checkout</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-image: url('{{ url_for('static', filename='checkout.png') }}');
+        background-size:cover;
+        margin: 0;
+        padding: 40px 20px 150px;
+        position: relative;
+        min-height: 100vh;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 1;
+    }
+    .logout-btn {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        z-index: 100;
+    }
+    .logout-btn:hover {
+        background-color: #c0392b;
+    }
+    h1 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+    label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 8px;
+    }
+    input[type="radio"] {
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    button[type="submit"], button#generateQR {
+        margin-top: 20px;
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 14px 25px;
+        font-size: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+    button[type="submit"]:hover, button#generateQR:hover {
+        background-color: #1e8449;
+    }
+    a.back-link {
+        display: inline-block;
+        margin-top: 25px;
+        color: #2980b9;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    a.back-link:hover {
+        text-decoration: underline;
+    }
+    .flash-messages {
+        margin-bottom: 20px;
+    }
+    .flash-messages .message {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+    .order-success {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #27ae60;
+        color: white;
+        font-weight: bold;
+        padding: 20px 30px;
+        font-size: 1.1rem;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    .order-success ul {
+        margin-top: 10px;
+        padding-left: 20px;
+    }
+    /* UPI phone input and QR container hidden initially */
+    #upiDetails {
+        margin-top: 15px;
+        display: none;
+    }
+    #qrContainer {
+        margin-top: 20px;
+        text-align: center;
+        display: none;
+    }
+    #qrContainer img {
+        width: 180px;
+        height: 180px;
+        border: 2px solid #27ae60;
+        border-radius: 12px;
+    }
+    #qrContainer p {
+        margin-top: 10px;
+        font-weight: 600;
+    }
+    input[type="tel"] {
+        padding: 8px;
+        font-size: 1rem;
+        width: 100%;
+        max-width: 220px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+</style>
+</head>
+<body>
+
+<!-- Logout button -->
+<form action="/logout" method="GET">
+    <button type="submit" class="logout-btn">Logout</button>
+</form>
+
+<div class="container">
+    <h1>Checkout</h1>
+
+    <p>Estimated delivery time: {{ estimated_delivery_time }} minutes</p>
+
+    <!-- Flash messages -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Checkout form -->
+    <form method="POST" id="checkoutForm">
+
+        <label>Select Payment Method:</label>
+
+        <input type="radio" id="cod" name="payment_method" value="Cash on Delivery" checked>
+        <label for="cod" style="display:inline;">Cash on Delivery</label><br>
+
+        <input type="radio" id="card" name="payment_method" value="Card Payment">
+        <label for="card" style="display:inline;">Card Payment</label><br>
+
+        <input type="radio" id="upi" name="payment_method" value="UPI Payment">
+        <label for="upi" style="display:inline;">UPI Payment</label><br>
+
+        <!-- UPI details: phone input and generate QR -->
+        <div id="upiDetails">
+            <label for="upiPhone">Enter UPI Phone Number:</label>
+            <input type="tel" id="upiPhone" name="upi_phone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" />
+            <button type="button" id="generateQR">Generate QR Code</button>
+        </div>
+
+        <button type="submit" id="placeOrderBtn">Place Order</button>
+    </form>
+
+    <a href="/cart" class="back-link">← Back to Cart</a>
+
+    <!-- QR Code Container -->
+    <div id="qrContainer">
+        <p>Scan this QR code to pay via UPI</p>
+        <img id="qrImage" src="" alt="UPI QR Code" />
+        <p><small>After successful payment, your order will be placed automatically.</small></p>
+    </div>
+</div>
+
+{% if session.get('cart') is not none and session.get('cart')|length == 0 and get_flashed_messages() %}
+    <div class="order-success">
+        Order placed successfully! You ordered:
+        <ul>
+            {% for product_id, quantity in session.get('last_order', {}).items() %}
+                <li>Product ID: {{ product_id }}, Quantity: {{ quantity }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<script>
+    // Elements
+    const paymentRadios = document.querySelectorAll('input[name="payment_method"]');
+    const upiDetails = document.getElementById('upiDetails');
+    const generateQRBtn = document.getElementById('generateQR');
+    const qrContainer = document.getElementById('qrContainer');
+    const qrImage = document.getElementById('qrImage');
+    const checkoutForm = document.getElementById('checkoutForm');
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    const upiPhoneInput = document.getElementById('upiPhone');
+
+    // Show/hide UPI phone input based on selected payment method
+    paymentRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value === 'UPI Payment' && radio.checked) {
+                upiDetails.style.display = 'block';
+                placeOrderBtn.style.display = 'none'; // hide place order until QR generated
+            } else {
+                upiDetails.style.display = 'none';
+                qrContainer.style.display = 'none';
+                placeOrderBtn.style.display = 'inline-block';
+            }
+        });
+    });
+
+    // Generate QR code button click handler
+    generateQRBtn.addEventListener('click', () => {
+        const phone = upiPhoneInput.value.trim();
+        if (!phone.match(/^\d{10}$/)) {
+            alert('Please enter a valid 10-digit phone number.');
+            return;
+        }
+
+        // Generate dummy UPI QR code URL
+        // In real app, generate actual UPI payment QR or integrate API
+        // For demo, generate a QR code with text: "upi://pay?pa=phone@upi&pn=User&tn=Order"
+        // Use a free QR code generator API or embed a data URL here
+
+        const upiURI = `upi://pay?pa=${phone}@upi&pn=Customer&tn=Order Payment`;
+
+        // Using a free QR code generator API for demo:
+        // Encode URI
+        const encodedURI = encodeURIComponent(upiURI);
+        // For demo, use https://api.qrserver.com/v1/create-qr-code/?data=...&size=180x180
+        const qrURL = `https://api.qrserver.com/v1/create-qr-code/?data=${encodedURI}&size=180x180`;
+
+        qrImage.src = qrURL;
+        qrContainer.style.display = 'block';
+
+        // Hide generate QR button, phone input
+        upiDetails.style.display = 'none';
+
+        // After 10 seconds (simulate payment), auto submit form
+        setTimeout(() => {
+            alert("Payment simulated as successful. Placing your order now.");
+            checkoutForm.submit();
+        }, 10000);
+    });
+</script>
+
+</body>
+</html>

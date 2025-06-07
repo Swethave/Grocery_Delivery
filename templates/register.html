@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seller Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('/static/reg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .register-form {
+            width: 400px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 30px;
+            margin: 100px auto;
+            border-radius: 10px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .back-button {
+            background: #2196F3;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-form">
+    <h2>Seller Registration</h2>
+    <form action="/register?role=seller" method="post">
+        <label>Name:</label>
+        <input type="text" name="name" required>
+
+        <label>Email:</label>
+        <input type="email" name="email" required>
+
+        <label>Password:</label>
+        <input type="password" name="password" required>
+
+        <label>Address:</label>
+        <textarea name="address" id="address" required></textarea>
+
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+
+        <button type="button" onclick="getLocation()">Use My Location</button><br><br>
+        <button type="submit">Register</button>
+    </form>
+
+    <!-- Back to Login Button -->
+    <form method="get" action="/login">
+        {% if role == 'seller' %}
+            <button type="submit" class="back-button" name="seller" value="1">Back to Seller Login</button>
+        {% elif role == 'buyer' %}
+            <button type="submit" class="back-button" name="buyer" value="1">Back to Buyer Login</button>
+        {% else %}
+            <button type="submit" class="back-button">Back to Login</button>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+}
+
+function successCallback(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    document.getElementById("latitude").value = lat;
+    document.getElementById("longitude").value = lon;
+
+    alert("Location captured!\nLatitude: " + lat + "\nLongitude: " + lon);
+
+    // Using OpenStreetMap's Nominatim for reverse geocoding
+    const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+
+    fetch(geocodeUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.display_name) {
+                document.getElementById("address").value = data.display_name;
+            } else {
+                alert("Unable to get address from coordinates.");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error occurred while fetching address.");
+        });
+}
+
+function errorCallback(error) {
+    alert("Error getting location: " + error.message);
+}
+</script>
+
+</body>
+</html>
+
